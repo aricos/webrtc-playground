@@ -1,0 +1,17 @@
+{
+  "name": "webrtc",
+  "version": "1.0.0",
+  "description": "webrtc demo implementation",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Aris Striglis",
+  "license": "MIT",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "https": "^1.0.0",
+    "ws": "^7.1.0"
+  }
+}
