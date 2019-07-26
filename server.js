@@ -91,12 +91,15 @@ var wss = new WebSocket.Server({
 wss.on("connection", function connection(ws) 
 {
     var operator = {
+        cmd: "identity.assign",
         open: true,
         uid: uuid.v4(),
-        connectionDate: new Date()
+        serverConnectionDate: new Date()
     }
     
     console.info(`open connection: operator=${operator.uid}`)
+    
+    ws.send(JSON.stringify(operator))
     
     ws.on("message", function incoming(message) 
     {
@@ -107,7 +110,7 @@ wss.on("connection", function connection(ws)
     
     ws.on("close", function()
     {
-        var duration = new Date().getTime() - operator.connectionDate.getTime()
+        var duration = new Date().getTime() - operator.serverConnectionDate.getTime()
         
         operator.open = false
         
