@@ -19,6 +19,7 @@
       {
         border-bottom: 1px solid #836053;
         padding: 13px 0;
+        margin-bottom: 8px;
       }
       
       .chat footer
@@ -30,7 +31,8 @@
       .chat textarea
       {
         width: 100%;
-        height: 50px;
+        height: 4em;
+        line-height: 1.5em;
       }
       
       .chat footer button
@@ -38,7 +40,7 @@
         display: block;
         width: 100%;
         height: 40px;
-        background-color: #dea18c;
+        background-color: #f6b29b;
         border: 1px solid #6a4e45;
         border-radius: 5px;
       }
@@ -94,7 +96,7 @@
       <section id="chat-messages" class="messages">
       </section>
       <footer>
-        <form onsubmit="room.sendMessage(this.elements[0].value);this.reset();return false">
+        <form id="chat-form">
         <textarea name="body"></textarea>
         <button>Send</button>
         </form>
@@ -106,9 +108,23 @@
     <script src="websocket.js"></script>
     <script src="webrtc.js"></script>
     <script src="room.js"></script>
+    <script src="chat.js"></script>    
     <script type="text/javascript">
       
       var messages = document.querySelector("#chat-messages")
+      
+      
+      // chat controller
+      
+      var chat = new ChatInputController(
+        document.querySelector("#chat-form")
+      )
+      
+      chat.onmessage = function(message)
+      {
+        room.sendMessage(message)
+      }
+      
       
       var roomSettings = {
         
