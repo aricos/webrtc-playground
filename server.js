@@ -3,6 +3,8 @@
 var fs = require("fs")
 var https = require("https")
 var path = require("path")
+var url = require("url")
+var querystring = require("querystring")
 var WebSocket = require('ws')
 var uuid = require("node-uuid")
 
@@ -35,15 +37,17 @@ var options = {
 
 var server = https.createServer(options.tls, function(req, res)
 {
-    if (req.url === "/")
+    var pathname = url.parse(req.url).pathname
+    
+    if (pathname === "/")
     {
-        req.url = "index.html"
+        pathname = "/index.html"
     }
   
 
     // Serve static files
     
-    var resourcePath = path.join(options.http.contentRoot, req.url)
+    var resourcePath = path.join(options.http.contentRoot, pathname)
   
     var fileStream = fs.createReadStream(resourcePath)
   
@@ -62,7 +66,7 @@ var server = https.createServer(options.tls, function(req, res)
     
         res.end("Not Found\n")
         
-        console.info(`not found: url=${req.url}`)
+        console.info(`not found: url=${pathname}`)
     })
   
     fileStream.on("open", function()
@@ -77,26 +81,28 @@ var server = https.createServer(options.tls, function(req, res)
     
         fileStream.pipe(res)
         
-        console.info(`serve file: url=${req.url}`)
+        console.info(`serve file: pathname=${pathname}`)
     })
 })
 
 
 // WebSocket
 
-var wss = new WebSocket.Server({ 
-    server: server
+var roomSocket = new WebSocket.Server({ 
+    noServer: true
 })
 
-wss.on("connection", function connection(ws) 
+roomSocket.on("connection", function connection(ws, req, uid) 
 {
+    
+    debugger
     var operator = {
         cmd: "identity.assign",
         open: true,
-        uid: uuid.v4(),
+        uid: uid || uuid.v4(),
         serverConnectionDate: new Date()
     }
-    
+
     console.info(`open connection: operator=${operator.uid}`)
     
     ws.send(JSON.stringify(operator))
@@ -118,7 +124,7 @@ wss.on("connection", function connection(ws)
     })
 })
 
-wss.broadcast = function(data)
+roomSocket.broadcast = function(data)
 {
     this.clients.forEach(function(client)
     {
@@ -128,6 +134,38 @@ wss.broadcast = function(data)
         }
     })
 }
+
+
+// Handle WebSocket upgrades
+
+server.on('upgrade', function upgrade(req, socket, head) 
+{
+    var urlinfo = url.parse(req.url)
+    
+    var pathname = urlinfo.pathname
+    
+    var identityUid = null
+    
+    if (urlinfo.query)
+    {
+        var query = querystring.parse(urlinfo.query)
+
+        identityUid = query.identity
+    }
+    
+    if (pathname === "/room" || pathname === "/")
+    {
+        roomSocket.handleUpgrade(req, socket, head, function(ws)
+        {
+            roomSocket.emit("connection", ws, req, identityUid)
+        })
+    } 
+  
+    else 
+    {
+        socket.destroy()
+    }
+})
 
 
 // Start https server

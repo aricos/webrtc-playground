@@ -1,5 +1,5 @@
 
-var createRoom = function(url, options)
+var createRoom = function(options)
 {   
     return function()
     {
@@ -12,7 +12,7 @@ var createRoom = function(url, options)
         
         var identity = {
             open: false,
-            uid: null,
+            uid: options ? options.uid : null,
             connectionDate: null,
             date: new Date()
         }
@@ -44,6 +44,7 @@ var createRoom = function(url, options)
         var onmessage = null
         var onerror = null
         var ondata = null
+        var onchange = null
         
         Object.defineProperties(room, {
             
@@ -124,6 +125,19 @@ var createRoom = function(url, options)
                     onerror = newValue
                 }
             },
+            
+            onchange: {
+                enumerable: true,
+                get: function()
+                {
+                    return onchange
+                },
+
+                set: function(newValue)
+                {
+                    onchange = newValue
+                }
+            },
         })
         
         
@@ -135,6 +149,7 @@ var createRoom = function(url, options)
             
             if (handler)
             {
+                console.log("arguments", arguments)
                 handler.call(room, argv)
             }
         }
@@ -168,6 +183,11 @@ var createRoom = function(url, options)
         function connectWebSocket()
         {            
             var urlInfo = wsInfoForPath()
+
+            if (identity.uid)
+            {
+                urlInfo.url += "?identity=" + identity.uid
+            }
     
             socket = new WebSocket(urlInfo.url)
             
@@ -187,6 +207,8 @@ var createRoom = function(url, options)
     
             socket.addEventListener("close", function()
             {
+                identity.open = false
+                
                 emit("close")
             })
     
@@ -211,14 +233,22 @@ var createRoom = function(url, options)
                     switch (decoded.cmd)
                     {
                     case "message.post":
+                    case "message.edit":
+                    case "message.remove":
                         emit("message", decoded)
                         break
                         
                     case "identity.assign":
                         Object.assign(identity, decoded)
                         emit("ready")
+                        emit("change", decoded)
                         break
-
+                        
+                    case "operator.join":
+                    case "operator.leave":
+                        emit("change", decoded)
+                        break
+                    
                     default:
                         emit("command", decoded)
                         break

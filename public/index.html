@@ -111,9 +111,6 @@
     <script src="chat.js"></script>    
     <script type="text/javascript">
       
-      var messages = document.querySelector("#chat-messages")
-      
-      
       // chat controller
       
       var chatInput = new ChatInputController(document.querySelector("#chat-form"))
@@ -128,8 +125,11 @@
 
       // room
       
-      var roomSettings = {
-        
+      var roomSettings = {}
+      
+      if (typeof localStorage !== "undefined")
+      {
+        roomSettings.uid = localStorage["room.uid"]
       }
       
       var room = createRoom(roomSettings)
@@ -150,8 +150,19 @@
       }
       
       room.oncommand = function(command)
-      {
+      { 
         gotMessageFromServer(command)
+      }
+      
+      room.onchange = function(message)
+      {
+        if (room.uid)
+        {
+          if (typeof localStorage !== "undefined")
+          {
+            localStorage["room.uid"] = room.uid
+          }
+        }
       }
       
       room.onready = function(command)
