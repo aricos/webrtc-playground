@@ -111,7 +111,7 @@ roomSocket.on("connection", function connection(ws, req, uid)
     {
         console.info(`received message: operator=${operator.uid}, message=${message}`)
         
-        wss.broadcast(message)
+        roomSocket.broadcast(message)
     })
     
     ws.on("close", function()
