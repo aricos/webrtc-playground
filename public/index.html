@@ -136,7 +136,7 @@
       
       room.onconnect = function()
       {
-
+        pageReady(room)
       }
       
       room.onclose = function()
@@ -149,6 +149,11 @@
         chatMessages.push(msg)
       }
       
+      room.oncommand = function(command)
+      {
+        gotMessageFromServer(command)
+      }
+      
       room.onready = function(command)
       {
         chatMessages.userUid = room.uid
@@ -159,7 +164,6 @@
         room.connect()
       })
       
-      pageReady();
     </script>
   </body>
 </html>

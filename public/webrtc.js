@@ -3,7 +3,7 @@ var localStream;
 var remoteVideo;
 var peerConnection;
 var uuid;
-var wss;
+var wss; // TODO: remove, no longer used
 
 var peerConnectionConfig = {
   'iceServers': [
@@ -18,17 +18,19 @@ function pageReady(room) {
   localVideo = document.getElementById('localVideo');
   remoteVideo = document.getElementById('remoteVideo');
 
-  // wss = new wsc({
+  // room.socket = new wsc({
 //       port: "8443",
 //       host: window.location.hostname,
-//       protocol: "wss"
+//       protocol: "room.socket"
 //
 //     })
 //
-//   wss.setup()
+//   room.socket.setup()
 
-//   serverConnection = new WebSocket('wss://' + window.location.hostname + ':8443');
+//   serverConnection = new WebSocket('room.socket://' + window.location.hostname + ':8443');
 //   serverConnection.onmessage = gotMessageFromServer;
+
+  // room.socket = room.socket
 
   var constraints = {
     video: true,
@@ -52,6 +54,7 @@ function getUserMediaSuccess(stream) {
 }
 
 function start(isCaller) {
+
   peerConnection = new RTCPeerConnection(peerConnectionConfig);
   peerConnection.onicecandidate = gotIceCandidate;
   peerConnection.ontrack = gotRemoteStream;
@@ -65,7 +68,7 @@ function start(isCaller) {
 function gotMessageFromServer(message) {
   if(!peerConnection) start(false);
 
-  var signal = JSON.parse(message.data);
+  var signal = message
 
   // Ignore messages from ourself
   if(signal.uuid == uuid) return;
@@ -84,7 +87,7 @@ function gotMessageFromServer(message) {
 
 function gotIceCandidate(event) {
   if(event.candidate != null) {
-    wss.send(JSON.stringify({'ice': event.candidate, 'uuid': uuid}));
+    room.socket.send(JSON.stringify({'ice': event.candidate, 'uuid': uuid}));
   }
 }
 
@@ -92,7 +95,7 @@ function createdDescription(description) {
   console.log('got description');
 
   peerConnection.setLocalDescription(description).then(function() {
-    wss.send(JSON.stringify({'sdp': peerConnection.localDescription, 'uuid': uuid}));
+    room.socket.send(JSON.stringify({'sdp': peerConnection.localDescription, 'uuid': uuid}));
   }).catch(errorHandler);
 }
 
