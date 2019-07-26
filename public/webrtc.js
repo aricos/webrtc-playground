@@ -13,24 +13,12 @@ var peerConnectionConfig = {
 };
 
 function pageReady(room) {
-  uuid = createUUID();
+    
+    return
+  uuid = room.uid || createUUID();
 
   localVideo = document.getElementById('localVideo');
   remoteVideo = document.getElementById('remoteVideo');
-
-  // room.socket = new wsc({
-//       port: "8443",
-//       host: window.location.hostname,
-//       protocol: "room.socket"
-//
-//     })
-//
-//   room.socket.setup()
-
-//   serverConnection = new WebSocket('room.socket://' + window.location.hostname + ':8443');
-//   serverConnection.onmessage = gotMessageFromServer;
-
-  // room.socket = room.socket
 
   var constraints = {
     video: true,

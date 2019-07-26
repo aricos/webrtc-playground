@@ -245,7 +245,12 @@ var createRoom = function(options)
                         break
                         
                     case "operator.join":
+                        emit("operatorjoin", decoded)
+                        emit("change", decoded)
+                        break
+                        
                     case "operator.leave":
+                        emit("operatorleave", decoded)
                         emit("change", decoded)
                         break
                     

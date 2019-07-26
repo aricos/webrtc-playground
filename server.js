@@ -28,7 +28,8 @@ var options = {
         ".txt": "text/plain",
         ".html": "text/html",
         ".js": "application/javascript",
-        ".json": "application/json"
+        ".json": "application/json",
+        ".css": "text/css"
     }
 }
 
@@ -93,25 +94,49 @@ var roomSocket = new WebSocket.Server({
 })
 
 roomSocket.on("connection", function connection(ws, req, uid) 
-{
-    
-    debugger
+{    
     var operator = {
         cmd: "identity.assign",
         open: true,
         uid: uid || uuid.v4(),
         serverConnectionDate: new Date()
     }
+    
+    console.info(`open connection: operator=${operator.uid}, returning=${!!uid}`)
+    
 
-    console.info(`open connection: operator=${operator.uid}`)
+    // send identity to operator
     
     ws.send(JSON.stringify(operator))
     
+    operator.cmd = "operator.join"
+    
+    roomSocket.broadcast(JSON.stringify(operator))
+    
+    
     ws.on("message", function incoming(message) 
     {
-        console.info(`received message: operator=${operator.uid}, message=${message}`)
+        console.info(`received message: operator=${operator.uid}, size=${message.length}`)
         
-        roomSocket.broadcast(message)
+        try
+        {
+            var decoded = JSON.parse(message)
+            
+            switch (decoded.cmd)
+            {
+            case "message.post":
+                roomSocket.broadcast(message)
+                break
+                
+            default:
+                break
+            }
+        }
+        
+        catch (error)
+        {
+            console.error("could not parse message:", error.message)
+        }
     })
     
     ws.on("close", function()
@@ -119,6 +144,10 @@ roomSocket.on("connection", function connection(ws, req, uid)
         var duration = new Date().getTime() - operator.serverConnectionDate.getTime()
         
         operator.open = false
+        
+        operator.cmd = "operator.leave"
+        
+        roomSocket.broadcast(JSON.stringify(operator))
         
         console.info(`closed connection: operator=${operator.uid}, duration=${duration}`)
     })
