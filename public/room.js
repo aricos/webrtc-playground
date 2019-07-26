@@ -98,6 +98,19 @@ var createRoom = function(url, options)
                 }
             },
             
+            ondata: {
+                enumerable: true,
+                get: function()
+                {
+                    return ondata
+                },
+
+                set: function(newValue)
+                {
+                    ondata = newValue
+                }
+            },
+            
             onerror: {
                 enumerable: true,
                 get: function()

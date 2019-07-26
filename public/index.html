@@ -9,7 +9,7 @@
         position: absolute;
         top: 10px;
         right: 10px;
-        max-width: 500px;
+        max-width: 400px;
         background-color: #D99D86;
         border-radius: 5px;
         padding: 10px;
@@ -41,6 +41,13 @@
         background-color: #dea18c;
         border: 1px solid #6a4e45;
         border-radius: 5px;
+      }
+
+      .chat .messages
+      {
+        max-height: 200px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
       
       .chat .message
@@ -120,7 +127,7 @@
       }
       
       room.onmessage = function(msg)
-      {
+      {        
         var message = document.createElement("article")
 
         message.classList.add("message")
@@ -137,6 +144,12 @@
         message.appendChild(p)
         
         messages.appendChild(message)
+        
+        messages.scrollTo({
+          top: messages.scrollHeight,
+          left: 0,
+          behavior: "smooth"
+        })
       }
       
       document.addEventListener("DOMContentLoaded", function()
@@ -144,8 +157,7 @@
         room.connect()
       })
       
-      
-        pageReady();
+      pageReady();
     </script>
   </body>
 </html>
