@@ -22,7 +22,7 @@
         background-color: #75554A;
         border-radius: 6px;
         color: #FFF;
-        opacity: 0.8;
+        opacity: 0.5;
         transform: opacity 0.15 linear;
       }
       
@@ -187,11 +187,13 @@
           {
             localStorage["room.uid"] = room.uid
           }
+          
+          localDevice.dataset.deviceUid = room.uid
         }
       }
       
       
-      // operators
+      // Device Grid
       
       var devices = document.querySelector(`.capture-devices`)
       
@@ -199,50 +201,42 @@
       
       var deviceTemplate = localDevice.cloneNode(true)
       
+      var deviceControllers = {}
+      
       room.onoperatorjoin = function(operator)
-      { 
-        if (operator.uid === room.uid)
-        {
-          localDevice.classList.add("active")
-          
-          return
-        }
-        
+      {         
         var devices = document.querySelector(`.capture-devices`)
         
-        var operatorDevice = devices.querySelector(`[data-device-uid='${operator.uid}']`)
+        var operatorElement = devices.querySelector(`[data-device-uid='${operator.uid}']`)
         
-        if (!operatorDevice)
+        if (!operatorElement)
         {
-          operatorDevice = deviceTemplate.cloneNode(true)
+          operatorElement = deviceTemplate.cloneNode(true)
+            
+          var operatorDevice = new CaptureDevice(operator.uid, CaptureDevice.REMOTE)
           
-          operatorDevice.id = `device-${operator.uid}`
+          var controller = new DeviceController(operatorDevice, operatorElement)
           
-          operatorDevice.dataset.deviceUid = operator.uid
+          controller.setUp()
           
-          devices.appendChild(operatorDevice)
+          deviceControllers[operator.uid] = controller
+          
+          devices.appendChild(operatorElement)
         }
         
-        operatorDevice.classList.add("active")
+        operatorElement.classList.add("active")
       }
       
       room.onoperatorleave = function(operator)
-      {
-        if (operator.uid === room.uid)
-        {
-          localDevice.classList.remove("active")
-          
-          return
-        }
+      {        
+        var operatorElement = devices.querySelector(`[data-device-uid='${operator.uid}']`)
         
-        var operatorDevice = devices.querySelector(`[data-device-uid='${operator.uid}']`)
-        
-        if (!operatorDevice)
+        if (!operatorElement)
         {
           return
         }
         
-        operatorDevice.classList.remove("active")
+        operatorElement.classList.remove("active")
       }
       
       room.onready = function(command)

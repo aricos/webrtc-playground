@@ -103,7 +103,6 @@ roomSocket.on("connection", function connection(ws, req, uid)
     }
     
     console.info(`open connection: operator=${operator.uid}, returning=${!!uid}`)
-    
 
     // send identity to operator
     
@@ -113,6 +112,20 @@ roomSocket.on("connection", function connection(ws, req, uid)
     
     roomSocket.broadcast(JSON.stringify(operator))
     
+    
+    // send all operators to the operators
+    
+    var operators = getAllOperators(roomSocket)
+    
+    ws.operator = operator // excluded self from list
+    
+    for (var i = 0; i < operators.length; i++)
+    {   
+        ws.send(JSON.stringify(operators[i]))
+    }
+    
+    
+    // handle messages
     
     ws.on("message", function incoming(message) 
     {
@@ -139,6 +152,9 @@ roomSocket.on("connection", function connection(ws, req, uid)
         }
     })
     
+    
+    // handle closing
+    
     ws.on("close", function()
     {
         var duration = new Date().getTime() - operator.serverConnectionDate.getTime()
@@ -162,6 +178,23 @@ roomSocket.broadcast = function(data)
             client.send(data)
         }
     })
+}
+
+function getAllOperators(socket)
+{
+    var operators = []
+    
+    socket.clients.forEach(function(client)
+    {
+        if(!client.operator)
+        {
+            return
+        }
+        
+        operators.push(client.operator)
+    })
+    
+    return operators
 }
 
 

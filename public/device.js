@@ -1,11 +1,11 @@
 
 
-var CaptureDevice = function(uid)
+var CaptureDevice = function(uid, type)
 {
     this.uid = uid
     this.isReady = false
     this.mediaStream = null
-    this.type = CaptureDevice.UNKNOWN
+    this.type = type || CaptureDevice.UNKNOWN
 }
 
 CaptureDevice.UNKNOWN   = 1 << 1
@@ -135,6 +135,7 @@ CaptureDevice.prototype.attachToMediaElement = function(element)
     }
     
     element.srcObject = this.mediaStream
+    
     element.muted = this.type === CaptureDevice.LOCAL // Mute local device
 }
 
@@ -145,35 +146,59 @@ var DeviceController = function(device, element)
 {
     this.device = device
     this.element = element
-    this.media = null
+    this.media = element.querySelector("video") || element.querySelector("audio")
 }
 
 DeviceController.prototype.setUp = function()
 {   
-    var element = this.element
+    var controller = this
     
-    var media = this.media = this.element.querySelector("video") || this.element.querySelector("audio")
+    // set values
     
-    var device = this.device
+    if (controller.device.uid)
+    {
+        controller.element.querySelector("header h4").innerText = controller.device.uid.split("-")[0]        
+    }
     
-
+    controller.element.dataset.deviceUid = controller.device.uid
+    
     // attach the video or audio element
     
-    device.attachToMediaElement(media)
+    if (controller.device.isReady)
+    {   
+        controller.device.attachToMediaElement(controller.media)
+    }
 
 
     // listen for clicks
     
-    element.addEventListener("mousedown", function(evt)
+    controller.element.addEventListener("mousedown", function(evt)
     {
+        evt.preventDefault()
+        evt.stopPropagation()
+        
         switch (evt.target.dataset.command)
         {
         case "audio.toggle":
-            media.muted = !media.muted
+            
+            if (!controller.media)
+            {
+                break
+            }
+            
+            controller.media.muted = !media.muted
+            
             break
             
         case "video.toggle":
-            device.videoEnabled = !device.videoEnabled
+            
+            if (!controller.device)
+            {
+                break
+            }
+            
+            controller.device.videoEnabled = !device.videoEnabled
+            
             break
             
         default: 

@@ -14,7 +14,9 @@ var createRoom = function(options)
             open: false,
             uid: options ? options.uid : null,
             connectionDate: null,
-            date: new Date()
+            date: new Date(),
+            reconnect: true,
+            reconnectTime: options ? options.reconnectTime || 500 : 500
         }
         
         Object.defineProperties(room, {
@@ -32,115 +34,35 @@ var createRoom = function(options)
                 {
                     return identity.open
                 }
+            },
+            
+            shouldReconnect: {
+                enumerable: true,
+                get: function()
+                {
+                    return identity.reconnect
+                },
+                
+                set: function(newValue)
+                {
+                    identity.reconnect = newValue
+                }
+            },
+            
+            reconnectTime: {
+                enumerable: true,
+                get: function()
+                {
+                    return identity.reconnectTime
+                },
+                
+                set: function(newValue)
+                {
+                    identity.reconnectTime = newValue
+                }
             }
         })
-        
-    
-        // EventHandlers
-        
-        var onclose = null    
-        var oncommand = null
-        var onconnect = null
-        var onmessage = null
-        var onerror = null
-        var ondata = null
-        var onchange = null
-        
-        Object.defineProperties(room, {
-            
-            onclose: {
-                enumerable: true,
-                get: function()
-                {
-                    return onclose
-                },
-
-                set: function(newValue)
-                {
-                    onclose = newValue
-                }
-            },
-            
-            oncommand: {
-                enumerable: true,
-                get: function()
-                {
-                    return oncommand
-                },
-
-                set: function(newValue)
-                {
-                    oncommand = newValue
-                }
-            },
-            
-            onconnect: {
-                enumerable: true,
-                get: function()
-                {
-                    return onconnect
-                },
-
-                set: function(newValue)
-                {
-                    onconnect = newValue
-                }
-            },
-            
-            onmessage: {
-                enumerable: true,
-                get: function()
-                {
-                    return onmessage
-                },
-
-                set: function(newValue)
-                {
-                    onmessage = newValue
-                }
-            },
-            
-            ondata: {
-                enumerable: true,
-                get: function()
-                {
-                    return ondata
-                },
-
-                set: function(newValue)
-                {
-                    ondata = newValue
-                }
-            },
-            
-            onerror: {
-                enumerable: true,
-                get: function()
-                {
-                    return onerror
-                },
-
-                set: function(newValue)
-                {
-                    onerror = newValue
-                }
-            },
-            
-            onchange: {
-                enumerable: true,
-                get: function()
-                {
-                    return onchange
-                },
-
-                set: function(newValue)
-                {
-                    onchange = newValue
-                }
-            },
-        })
-        
-        
+       
         function emit(eventName, argv)
         {
             var handlerName = "on" + eventName
@@ -210,6 +132,13 @@ var createRoom = function(options)
                 identity.open = false
                 
                 emit("close")
+                
+                // reconnect if needed
+                
+                if (identity.reconnect)
+                {
+                    setTimeout(connectWebSocket, identity.reconnectTime)
+                }
             })
     
             socket.addEventListener("message", function(message)
