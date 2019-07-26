@@ -12,20 +12,20 @@ var peerConnectionConfig = {
   ]
 };
 
-function pageReady() {
+function pageReady(room) {
   uuid = createUUID();
 
   localVideo = document.getElementById('localVideo');
   remoteVideo = document.getElementById('remoteVideo');
 
-  wss = new wsc({
-      port: "8443",
-      host: window.location.hostname,
-      protocol: "wss"
-    
-    })
-    
-  wss.setup()
+  // wss = new wsc({
+//       port: "8443",
+//       host: window.location.hostname,
+//       protocol: "wss"
+//
+//     })
+//
+//   wss.setup()
 
 //   serverConnection = new WebSocket('wss://' + window.location.hostname + ':8443');
 //   serverConnection.onmessage = gotMessageFromServer;
@@ -33,11 +33,15 @@ function pageReady() {
   var constraints = {
     video: true,
     audio: true,
-  };
+  }
 
-  if(navigator.mediaDevices.getUserMedia) {
+  if(navigator.mediaDevices.getUserMedia) 
+  {
     navigator.mediaDevices.getUserMedia(constraints).then(getUserMediaSuccess).catch(errorHandler);
-  } else {
+  } 
+  
+  else 
+  {
     alert('Your browser does not support getUserMedia API');
   }
 }

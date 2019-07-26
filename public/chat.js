@@ -54,13 +54,35 @@ var ChatInputController = function(form)
 }
 
 
-var ChatMessagesController = function(messages)
+var ChatMessagesController = function(messages, userUid)
 {    
+    this.userUid = userUid
     this.messages = messages
 }
 
 ChatMessagesController.prototype.push = function(message)
 {
+    var element = document.createElement("article")
+
+    element.classList.add("message")
     
+    if (message.sender && message.sender === this.userUid)
+    {
+      element.classList.add("mine")
+    }
+    
+    var p = document.createElement("p")
+    
+    p.innerText = message.body
+    
+    element.appendChild(p)
+    
+    this.messages.appendChild(element)
+    
+    this.messages.scrollTo({
+      top: this.messages.scrollHeight,
+      left: 0,
+      behavior: "smooth"
+    })
 }
 

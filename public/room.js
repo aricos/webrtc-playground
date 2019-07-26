@@ -43,6 +43,7 @@ var createRoom = function(url, options)
         var onconnect = null
         var onmessage = null
         var onerror = null
+        var ondata = null
         
         Object.defineProperties(room, {
             
@@ -193,31 +194,36 @@ var createRoom = function(url, options)
             {
                 if (message.data)
                 {
+                    var decoded = null
+                    
                     try
                     {
                         var decoded = JSON.parse(message.data)
-                        
-                        switch (decoded.cmd)
-                        {
-                        case "message.post":
-                            emit("message", decoded)
-                            break
-                            
-                        case "identity.assign":
-                            Object.assign(identity, decoded)
-                            break
-
-                        default:
-                            emit("command", decoded)
-                            break
-                        }
                     }
                     
                     catch (error)
                     {
                         emit("data", message.data)
+                        
+                        return
                     }
-                }
+                        
+                    switch (decoded.cmd)
+                    {
+                    case "message.post":
+                        emit("message", decoded)
+                        break
+                        
+                    case "identity.assign":
+                        Object.assign(identity, decoded)
+                        emit("ready")
+                        break
+
+                    default:
+                        emit("command", decoded)
+                        break
+                    }
+                }    
             })
         }
                 
