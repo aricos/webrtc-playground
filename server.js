@@ -1,56 +1,135 @@
-const WebSocket = require('ws')
-const fs = require("fs")
-const https = require("https")
-const HTTPS_PORT = 8443;
-// const koa = require("koa")
-// const app = new koa()
+// Dependencies
+
+var fs = require("fs")
+var https = require("https")
+var path = require("path")
+var WebSocket = require('ws')
+var uuid = require("node-uuid")
 
 
-// TLS
-const tlsConfig = {
-    key: fs.readFileSync('key.pem'),
-    cert: fs.readFileSync('cert.pem')
+// Runtime options
+
+var options = {
+    debug: !!process.env.DEBUG || true,
+    
+    http: {
+        https_port: process.env.HTTPS_PORT || process.env.HTTP_PORT || 8443,
+        contentRoot: path.join(__dirname, "public")
+    },
+    
+    tls: {
+        key: fs.readFileSync(process.env.TLS_KEY_PATH || 'key.pem'),
+        cert: fs.readFileSync(process.env.TLS_CERT_PATH || 'cert.pem')
+    },
+    
+    mimetypes: {
+        ".txt": "text/plain",
+        ".html": "text/html",
+        ".js": "application/javascript",
+        ".json": "application/json"
+    }
 }
 
-// Create a server for the client html page
-const requestHandler = function(request, response) {
-    // Render the single client html file for any request the HTTP server receives
-    console.log('request received: ' + request.url);
+
+// Create https server
+
+var server = https.createServer(options.tls, function(req, res)
+{
+    if (req.url === "/")
+    {
+        req.url = "index.html"
+    }
   
-    if(request.url === '/') {
-        response.writeHead(200, {'Content-Type': 'text/html'});
-        response.end(fs.readFileSync('public/index.html'));
-    } else if(request.url === '/webrtc.js') {
-        response.writeHead(200, {'Content-Type': 'application/javascript'});
-        response.end(fs.readFileSync('public/webrtc.js'));
-    } else if(request.url === '/websocket.js') {
-        response.writeHead(200, {'Content-Type': 'application/javascript'});
-        response.end(fs.readFileSync('public/websocket.js'));
+
+    // Serve static files
+    
+    var resourcePath = path.join(options.http.contentRoot, req.url)
+  
+    var fileStream = fs.createReadStream(resourcePath)
+  
+    fileStream.on("error", function(err)
+    {
+        var headers = {
+            "Content-Type": "text/plain"
         }
-  };
-
-
-const server = https.createServer(tlsConfig, requestHandler)
+    
+        if (options.debug)
+        {
+            headers["Internal-Error-Message"] = err.message
+        }
+    
+        res.writeHead(404, headers)
+    
+        res.end("Not Found\n")
+        
+        console.info(`not found: url=${req.url}`)
+    })
+  
+    fileStream.on("open", function()
+    {
+        var contentType = options.mimetypes[path.extname(resourcePath)] || "text/plain"
+        
+        var headers = {
+            "Content-Type": contentType
+        } 
+    
+        res.writeHead(200, headers)
+    
+        fileStream.pipe(res)
+        
+        console.info(`serve file: url=${req.url}`)
+    })
+})
 
 
 // WebSocket
 
-const wss = new WebSocket.Server({ server });
+var wss = new WebSocket.Server({ 
+    server: server
+})
 
-wss.on("connection", function connection(ws) {
-    ws.on("message", function incoming(message) {
-        // Broadcast any received message to all clients
-        console.log("New message arrived", message)
+wss.on("connection", function connection(ws) 
+{
+    var operator = {
+        open: true,
+        uid: uuid.v4(),
+        connectionDate: new Date()
+    }
+    
+    console.info(`open connection: operator=${operator.uid}`)
+    
+    ws.on("message", function incoming(message) 
+    {
+        console.info(`received message: operator=${operator.uid}, message=${message}`)
+        
         wss.broadcast(message)
+    })
+    
+    ws.on("close", function()
+    {
+        var duration = new Date().getTime() - operator.connectionDate.getTime()
+        
+        operator.open = false
+        
+        console.info(`closed connection: operator=${operator.uid}, duration=${duration}`)
     })
 })
 
-wss.broadcast = function(data){
-    this.clients.forEach(function(client){
-        if(client.readyState === WebSocket.OPEN){
+wss.broadcast = function(data)
+{
+    this.clients.forEach(function(client)
+    {
+        if(client.readyState === WebSocket.OPEN)
+        {
             client.send(data)
         }
     })
 }
 
-server.listen(HTTPS_PORT, '0.0.0.0')
+
+// Start https server
+
+server.listen(options.http.https_port, "0.0.0.0", function()
+{
+    console.info(`started https server: port=${server.address().port}, address=${server.address().address}`)
+})
