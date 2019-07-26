@@ -53,4 +53,6 @@ wsc.prototype.onMessage = function(message){
     gotMessageFromServer(message)
 
     // console.info(data)
+    
+
 }

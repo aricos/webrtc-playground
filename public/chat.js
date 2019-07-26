@@ -53,3 +53,14 @@ var ChatInputController = function(form)
     }
 }
 
+
+var ChatMessagesController = function(messages)
+{    
+    this.messages = messages
+}
+
+ChatMessagesController.prototype.push = function(message)
+{
+    
+}
+
