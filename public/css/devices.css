@@ -1,0 +1,119 @@
+.capture-device
+{
+    position: relative;
+    display: inline-block;
+    width: 22%;
+    margin: 1%;
+    height: auto;
+    background-color: #75554A;
+    border-radius: 6px;
+    color: #FFF;
+    opacity: 0.5;
+    transform: opacity 0.15 linear;
+}
+
+@media (max-width: 500px) 
+{
+    .capture-device
+    {
+        width: 96%;
+        margin: 2%;
+    }
+}
+
+@media (min-width: 500px) and (max-width: 700px) 
+{
+    .capture-device
+    {
+        width: 46%;
+        margin: 1%;
+    }
+}
+
+@media (max-width: 2024px) and (min-width: 700px) 
+{
+    .capture-device
+    {
+        width: 30%;
+        margin: 1%;
+    }
+}
+
+@media (min-width: 1024px) 
+{
+    .capture-device
+    {
+        width: 22%;
+        margin: 1%;
+    }
+}
+
+.capture-device.active
+{
+    opacity: 1;
+}
+
+.capture-device video
+{
+    width: 100%;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    background-color: #563F37;
+}
+
+.capture-device header
+{
+    padding: 0;
+    margin: 0;
+}
+
+.capture-device header h4
+{
+    padding: 0;
+    margin: 1em;
+}
+
+.capture-device nav
+{
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 0.4em 0.2em 1em 0.2em;
+    /*        background-color: rgba(255, 255, 255, 0.6);*/
+    text-align: center;
+}
+
+.capture-device nav button
+{
+    display: inline-block;
+    background-color: #956B5D;
+    color: #FFF;
+    border: none;
+    border-radius: 5px;
+    padding: 0.8em 1em;
+}
+
+.capture-device nav button 
+{
+    outline: none;
+    border: none;
+}
+
+
+/** Devices Listing */
+
+.capture-devices
+{
+    background-color: #956B5D;
+    position: absolute;
+    border: 1px solid #D59884;
+    top: 4em;
+    right: 25%;
+    bottom: 1em;
+    left: 1em;
+    padding: 0 0 3em 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 6px;
+}

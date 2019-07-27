@@ -141,6 +141,11 @@ roomSocket.on("connection", function connection(ws, req, uid)
                 roomSocket.broadcast(message)
                 break
                 
+            case "videosession.start":
+            case "videosession.icecandidate":
+                roomSocket.broadcast(message, ws)
+                break
+                
             default:
                 break
             }
@@ -169,11 +174,11 @@ roomSocket.on("connection", function connection(ws, req, uid)
     })
 })
 
-roomSocket.broadcast = function(data)
+roomSocket.broadcast = function(data, skip)
 {
     this.clients.forEach(function(client)
     {
-        if(client.readyState === WebSocket.OPEN)
+        if((!skip || client != skip) && client.readyState === WebSocket.OPEN)
         {
             client.send(data)
         }

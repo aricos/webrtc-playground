@@ -186,7 +186,7 @@ DeviceController.prototype.setUp = function()
                 break
             }
             
-            controller.media.muted = !media.muted
+            controller.media.muted = !controller.media.muted
             
             break
             
@@ -197,7 +197,7 @@ DeviceController.prototype.setUp = function()
                 break
             }
             
-            controller.device.videoEnabled = !device.videoEnabled
+            controller.device.videoEnabled = !controller.device.videoEnabled
             
             break
             

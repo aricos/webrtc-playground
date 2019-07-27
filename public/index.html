@@ -4,6 +4,7 @@
     <title>webrtc playground</title>
     
     <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/devices.css">
     <style>
       body
       {
@@ -12,85 +13,20 @@
         background-color: #372924;
       }
       
-      .capture-device
+      h2, h3, h4, h5, h6
       {
-        position: relative;
-        display: inline-block;
-        width: 22%;
-        margin: 1%;
-        height: auto;
-        background-color: #75554A;
-        border-radius: 6px;
-        color: #FFF;
-        opacity: 0.5;
-        transform: opacity 0.15 linear;
-      }
+        font-weight: lighter;
+      }      
       
-      .capture-device.active
+      .main-nav
       {
-        opacity: 1;
-      }
-      
-      .capture-device video
-      {
-        width: 100%;
-        height: auto;
-        padding: 0;
-        margin: 0;
-        background-color: #563F37;
-      }
-
-      .capture-device header
-      {
-        padding: 0;
-        margin: 0;
-      }
-      
-      .capture-device header h4
-      {
-        padding: 0;
-        margin: 1em;
-      }
-      
-      .capture-device nav
-      {
-        right: 0;
-        bottom: 0;
-        left: 0;
-        padding: 0.4em 0.2em 1em 0.2em;
-/*        background-color: rgba(255, 255, 255, 0.6);*/
-        text-align: center;
-      }
-      
-      .capture-device nav button
-      {
-        display: inline-block;
-        background-color: #956B5D;
-        color: #FFF;
-        border: none;
-        border-radius: 5px;
-        padding: 0.8em 1em;
-      }
-      
-      .capture-device nav button 
-      {
-          outline: none;
-          border: none;
-      }
-      
-
-      /** Devices Listing */
-      
-      .capture-devices
-      {
-        background-color: #956B5D;
+        background-color: #5E453C;
         position: absolute;
         border: 1px solid #D59884;
         top: 1em;
         right: 25%;
-        bottom: 1em;
         left: 1em;
-        padding: 0 0 3em 0;
+        padding: 0.5em 0.5em;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         border-radius: 6px;
@@ -101,12 +37,17 @@
 
   <body>
 
+    <header class="main-nav">
+      <nav>
+        <button onclick="startVideoConnection()">Start Video Connection</button>
+      </nav>
+    </header>
     
     
     <section class="capture-devices">
       <article id="local-device" class="capture-device">
         <header>
-          <h4>Local Device</h4>
+          <h4>Your Device</h4>
         </header>
         <video id="captureVideo" autoplay></video>
         <nav>
@@ -126,7 +67,7 @@
 
     <section class="chat">
       <header>
-        <h3>Chat</h3>
+        <h3>Message</h3>
       </header>
       <section id="chat-messages" class="messages">
       </section>
@@ -174,9 +115,33 @@
         chatMessages.push(msg)
       }
       
+      room.oninvitation = function(command)
+      {
+        if (command.sender === room.uid)
+        {
+          return
+        }
+        
+        joinVideoConnection(command)
+      }
+      
+      room.onicecandidate = function(command)
+      {
+        // joinVideoConnection(command)
+      }
+      
       room.oncommand = function(command)
       { 
-        gotMessageFromServer(command)
+        // gotMessageFromServer(command)
+        
+        console.log(command)
+        
+        
+        switch (command.cmd)
+        {
+        default:
+          break
+        }
       }
       
       room.onchange = function(message)
@@ -265,6 +230,144 @@
         
         captureDeviceController.setUp()    
       })
+      
+      
+      // Video Session
+      
+      var videoPeerConnectionConfig = {
+        "iceServers": [
+          {
+            "urls": "stun:stun.stunprotocol.org:3478"
+          },
+          
+          {
+            "urls": "stun:stun.l.google.com:19302"
+          }
+        ]
+      }
+      
+      var videoPeerConnection
+      
+      function receivedIceCandidate(event) 
+      {
+        if (event.candidate != null) 
+        {
+          room.sendCommand("videosession.icecandidate", {
+            "ice": event.candidate, 
+            "uuid": room.uid
+          })
+          // room.socket.send(JSON.stringify({'ice': event.candidate, 'uuid': uuid}));
+        }
+      }
+      
+      function receivedRemoteStream(event)
+       {
+        console.log('got remote stream', event)
+        // debuggers
+        // remoteVideo.srcObject = event.streams[0];
+      }
+      
+      
+      function startVideoConnection()
+      {      
+        videoPeerConnection = new RTCPeerConnection(videoPeerConnectionConfig)
+        videoPeerConnection.onicecandidate = receivedIceCandidate
+        videoPeerConnection.ontrack = receivedRemoteStream
+        videoPeerConnection.addStream(captureDevice.mediaStream)
+
+        videoPeerConnection.createOffer().then(setDescription).catch(errorHandler)
+        
+        // callbacks
+        
+        function setDescription(description)
+        {
+          videoPeerConnection.setLocalDescription(description)
+                             .then(reportOffer)
+                             .catch(errorHandler)
+        }
+        
+        function reportOffer()
+        {
+          {
+            room.sendCommand("videosession.start", {
+              "sdp": videoPeerConnection.localDescription, 
+              "uuid": room.uid
+            })
+          }
+        }
+        
+        function errorHandler(error)
+        {
+          alert("Failed to start video connection:\n" + error)
+          
+          console.error("error", arguments)
+        }
+      }
+      
+      function joinVideoConnection(command)
+      {
+        if (command.sender === room.uid)
+        {
+          
+        }
+
+        videoPeerConnection = new RTCPeerConnection(videoPeerConnectionConfig)
+        videoPeerConnection.onicecandidate = receivedIceCandidate
+        videoPeerConnection.ontrack = receivedRemoteStream
+        videoPeerConnection.addStream(captureDevice.mediaStream)
+        
+        // Ignore messages from ourself
+        if (command.sender === room.uid)
+        {
+          return
+        }
+
+        if (command.sdp) 
+        {
+          var description = new RTCSessionDescription(command.sdp)
+          
+          videoPeerConnection.setRemoteDescription(description).then(function()
+          {
+            // Only create answers in response to offers
+            if (command.sdp.type === "offer")
+            {
+              videoPeerConnection.createAnswer().then(setDescription).catch(errorHandler)
+            }
+          }).catch(errorHandler)
+        } 
+        
+        else if (command.ice) 
+        {
+          videoPeerConnection.addIceCandidate(new RTCIceCandidate(command.ice)).catch(errorHandler)
+        }
+        
+
+        // callbacks
+        
+        function setDescription(description)
+        {
+          videoPeerConnection.setLocalDescription(description)
+                             .then(reportOffer)
+                             .catch(errorHandler)
+        }
+        
+        function reportOffer()
+        {
+          {
+            room.sendCommand("videosession.start", {
+              "sdp": videoPeerConnection.localDescription, 
+              "uuid": room.uid
+            })
+          }
+        }
+        
+        function errorHandler(error)
+        {
+          alert("Failed to join video connection:\n" + error)
+          
+          console.error("error", arguments)
+        }
+      }
             
       
       // Chat

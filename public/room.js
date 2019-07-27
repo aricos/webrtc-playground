@@ -158,7 +158,7 @@ var createRoom = function(options)
                         
                         return
                     }
-                        
+                                            
                     switch (decoded.cmd)
                     {
                     case "message.post":
@@ -182,6 +182,14 @@ var createRoom = function(options)
                         emit("operatorleave", decoded)
                         emit("change", decoded)
                         break
+                        
+                    case "videosession.start":
+                        emit("invitation", decoded)
+                        break
+                        
+                    case "videosession.icecandidate":
+                        emit("icecandidate", decoded)
+                        break
                     
                     default:
                         emit("command", decoded)
@@ -201,8 +209,13 @@ var createRoom = function(options)
             },
             
             sendMessage: {
-                enumerable: false,
+                enumerable: true,
                 value: sendMessage
+            },
+            
+            sendCommand: {
+                enumerable: true,
+                value: sendCommand
             }
         })
         
