@@ -1,4 +1,3 @@
-
 var createRoom = function(options)
 {   
     return function()
@@ -186,6 +185,11 @@ var createRoom = function(options)
                     case "videosession.start":
                         emit("invitation", decoded)
                         break
+
+                    case "videosession.join":
+                        emit("videosessionjoin", decoded)
+                        break
+
                         
                     case "videosession.icecandidate":
                         emit("icecandidate", decoded)
