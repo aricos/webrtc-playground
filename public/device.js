@@ -4,6 +4,7 @@ var CaptureDevice = function(uid, type)
 {
     this.uid = uid
     this.isReady = false
+    this.isOffline = true
     this.mediaStream = null
     this.type = type || CaptureDevice.UNKNOWN
 }
@@ -84,11 +85,134 @@ Object.defineProperties(CaptureDevice.prototype, {
             
             video[0].enabled = newValue // TODO: check if this works well with more tracks
         }
+    },
+    
+    
+    // Camera Controll
+    
+    videoTrack: {
+        get: function()
+        {
+            if (!this.mediaStream)
+            {
+                return null
+            }
+            
+            return this.mediaStream.getVideoTracks()[0]
+        }
+    },
+    
+    zoom: {
+        set: function(newValue)
+        {
+            var videoTrack = this.videoTrack
+            debugger
+            if (!videoTrack)
+            {
+                return
+            }
+            
+            var constraints = videoTrack.getConstraints()
+            
+            constraints.zoom = newValue
+            
+            videoTrack.applyConstraints(constraints)
+            
+            .then(() => {
+                // Do something with the track such as using the Image Capture API.
+                debugger
+              })
+              .catch(e => {
+                // The constraints could not be satisfied by the available devices.
+                  debugger
+              })
+            
+  
+        },
+        
+        get: function() {
+            return this.videoSettings.zoom || -1
+        }
+    },
+    
+    videoSettings: {
+        get: function()
+        {
+            var videoTrack = this.videoTrack
+            
+            if (!videoTrack)
+            {
+                return {}
+            }
+            
+
+            return videoTrack.getSettings() || {}
+        }
+    },
+    
+    facingMode: {
+        set: function(newValue)
+        {
+            var videoTrack = this.videoTrack
+            
+            if (!videoTrack)
+            {
+                return
+            }
+            
+            var constraints = videoTrack.getConstraints()
+            
+            constraints.facingMode = { "ideal": newValue }
+            
+            videoTrack.applyConstraints(constraints)
+            
+            .then(() => {
+                // Do something with the track such as using the Image Capture API.
+                debugger
+              })
+              .catch(e => {
+                // The constraints could not be satisfied by the available devices.
+                  debugger
+              })
+        },
+        
+        get: function() {
+            var videoTrack = this.videoTrack
+            
+            if (!videoTrack)
+            {
+                return "none"
+            }
+            
+            return videoTrack.getConstraints().facingMode || "none"
+        }
     }
 })
 
 
-CaptureDevice.prototype.setUpMedia = function(mediaTypes, cb)
+CaptureDevice.prototype.setUp = function()
+{
+    var stream = new MediaStream()
+    
+    var offlineTracks = offlineStream.getTracks()
+
+    for (var i = 0; i < offlineTracks.length; i++)
+    {
+        stream.addTrack(offlineTracks[i])
+    }
+    
+    this.setUpWithStream(stream)
+
+    this.isOffline = true
+}
+
+CaptureDevice.prototype.setUpWithStream = function(stream)
+{   
+    this.mediaStream = stream
+    this.isReady = true
+}
+
+CaptureDevice.prototype.setUpWithUserMedia = function(mediaTypes, cb)
 {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
     {
@@ -139,20 +263,111 @@ CaptureDevice.prototype.attachToMediaElement = function(element)
     element.muted = this.type === CaptureDevice.LOCAL // Mute local device
 }
 
+CaptureDevice.prototype.addTrack = function(track)
+{
+    if (this.isOffline)
+    {
+        this.stopOfflineStream()
+    }
+    
+    this.mediaStream.addTrack(track)
+}
+
+CaptureDevice.prototype.stopOfflineStream = function()
+{
+    if (!this.isOffline)
+    {
+        return
+    }
+    
+    var tracks = this.mediaStream.getTracks()
+    
+    for (var i = 0; i < tracks.length; i++)
+    {
+        this.mediaStream.removeTrack(tracks[i])
+    }
+    
+    this.isOffline = false
+}
+
+
+
+
+// Offline Image Canvas
+
+var offlineCanvas = document.querySelector(".offline-animation")
+
+var offlineCtx = offlineCanvas.getContext("2d")
+
+var offlineStream = offlineCanvas.captureStream(0)
+
+CaptureDevice.offlineStream = offlineStream
+
+
+var offlineTick = function(time)
+{
+    offlineCtx.save()
+    
+    offlineCtx.fillStyle = "#5D453C"
+
+    offlineCtx.clearRect(0, 0, offlineCanvas.width, offlineCanvas.height)
+
+    offlineCtx.fillRect(0, 0, offlineCanvas.width, offlineCanvas.height)
+
+
+    offlineCtx.fillStyle = "#FFF"
+    
+    offlineCtx.textAlign = "center"
+    
+    offlineCtx.font = `lighter ${offlineCanvas.width / 10}px Courier`
+
+    offlineCtx.fillText("No Video", offlineCanvas.width / 2, offlineCanvas.height / 2)
+        
+    offlineCtx.restore()
+    
+
+
+    offlineCtx.save()
+    
+    offlineCtx.translate(offlineCanvas.width / 2, offlineCanvas.height - offlineCanvas.height / 4)
+    
+    offlineCtx.rotate((time % 360 / 4) * Math.PI / 180)
+        
+    offlineCtx.strokeStyle = "#D99D86"
+    
+    offlineCtx.strokeRect(-30, -30, 60, 60)
+    
+    offlineCtx.restore()
+    
+    
+    offlineStream.getTracks()[0].requestFrame()
+    
+    window.requestAnimationFrame(offlineTick)
+}
+
+offlineTick()
+
+
 
 // Device Controller
 
-var DeviceController = function(device, element)
+var DeviceController = function(device, element, room)
 {
+    this.room = room
     this.device = device
     this.element = element
     this.media = element.querySelector("video") || element.querySelector("audio")
+    
+    if (device.type === CaptureDevice.REMOTE)
+    {
+        this.videoSession = new VideoSessionController(device, room)
+    }    
 }
 
 DeviceController.prototype.setUp = function()
 {   
     var controller = this
-    
+        
     // set values
     
     if (controller.device.uid)
@@ -165,10 +380,16 @@ DeviceController.prototype.setUp = function()
     // attach the video or audio element
     
     if (controller.device.isReady)
-    {   
+    {       
         controller.device.attachToMediaElement(controller.media)
     }
 
+
+    // update video sessio
+    if (controller.videoSession)
+    {
+        controller.videoSession.upateDeviceStream()
+    }
 
     // listen for clicks
     
@@ -205,4 +426,24 @@ DeviceController.prototype.setUp = function()
             break
         }
     })
+}
+
+DeviceController.prototype.offerCaptureDevice = function(captureDevice)
+{
+    if (!this.videoSession)
+    {
+        throw new Error("no video session")
+    }
+    
+    this.videoSession.sendInvitation(this.device.uid, captureDevice)
+}
+
+DeviceController.prototype.acceptInvitation = function(command)
+{
+    if (!this.videoSession)
+    {
+        throw new Error("Device has no remote video session")
+    }
+    
+    this.videoSession.acceptInvitation(command)
 }

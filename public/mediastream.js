@@ -31,24 +31,27 @@ var VideoSessionController = function(captureDevice, room)
         {
             controller.room.sendCommand("videosession.icecandidate", {
                 "ice": event.candidate, 
-                "uuid": controller.room.uid
+                "uuid": controller.room.uid,
+                "receiver": captureDevice.uid
             })
         }
     }
     
-    peerConnection.ontrack = function(track)
+    peerConnection.ontrack = function(evt)
     {
         // debugger
-                
-        var video = document.querySelector(".capture-device:last-child video")
         
-        video.srcObject = track.streams[0]
+        controller.device.addTrack(evt.track)
+                
+        // var video = document.querySelector(".capture-device:last-child video")
+        //
+        // video.srcObject = track.streams[0]
         
 
         // receivedRemoteStream
     }
     
-    this.upateDeviceStream()
+    // this.upateDeviceStream()
 }
 
 VideoSessionController.prototype.emit = function(eventName, argv)
@@ -65,15 +68,23 @@ VideoSessionController.prototype.emit = function(eventName, argv)
 
 VideoSessionController.prototype.upateDeviceStream = function()
 {
-    if (captureDevice.isReady)
-    {
-        this.peerConnection.addStream(captureDevice.mediaStream)        
-    }
+    // if (!captureDevice.isReady || this.peerConnection.getStreams().indexOf(captureDevice.mediaStream) !== -1)
+   //  {
+   //      return
+   //  }
+   //
+   //  this.peerConnection.addStream(captureDevice.mediaStream)
 }
 
-VideoSessionController.prototype.sendInvitation = function()
+VideoSessionController.prototype.sendInvitation = function(invitee, localDevice)
 {
     var controller = this
+    
+    if (localDevice.isReady)
+    {
+        // FIXME: Should not be called twice
+        controller.peerConnection.addStream(localDevice.mediaStream)
+    }
     
     controller.peerConnection
     .createOffer()
@@ -90,7 +101,7 @@ VideoSessionController.prototype.sendInvitation = function()
   
     function reportOffer()
     {
-        controller.room.sendCommand("videosession.start", {
+        controller.room.sendCommandTo(invitee, "videosession.start", {
             "sdp": controller.peerConnection.localDescription, 
             "uuid": controller.room.uid
         })
@@ -150,7 +161,7 @@ VideoSessionController.prototype.acceptInvitation = function(command)
   
     function reportOffer()
     {
-        room.sendCommand("videosession.start", {
+        room.sendCommandTo(command.sender, "videosession.start", {
             "sdp": controller.peerConnection.localDescription, 
             "uuid": controller.room.uid
         })

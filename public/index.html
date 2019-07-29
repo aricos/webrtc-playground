@@ -39,7 +39,7 @@
 
     <header class="main-nav">
       <nav>
-        <button onclick="videoSession.sendInvitation()">Start Video Connection</button>
+        <!--button onclick="videoSession.sendInvitation(captureDevice)">Start Video Connection</button -->
       </nav>
     </header>
     
@@ -78,6 +78,8 @@
         </form>
       </footer>
     </section>
+    
+    <canvas class="offline-animation" width=640 height=320 style="display:none;"></canvas>
 
 
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
@@ -88,7 +90,6 @@
     <script src="device.js"></script>
     <script src="mediastream.js"></script>    
     <script type="text/javascript">
-          
 
       // Room
       
@@ -166,7 +167,9 @@
             
           var operatorDevice = new CaptureDevice(operator.uid, CaptureDevice.REMOTE)
           
-          var controller = new DeviceController(operatorDevice, operatorElement)
+          operatorDevice.setUp()
+          
+          var controller = new DeviceController(operatorDevice, operatorElement, room)
           
           controller.setUp()
           
@@ -208,9 +211,9 @@
       var captureDeviceController = new DeviceController(captureDevice, document.querySelector("#local-device"))
       
       var videoSession = new VideoSessionController(captureDevice, room)
-       
       
-      captureDevice.setUpMedia(mediaTypes, function(err)
+
+      captureDevice.setUpWithUserMedia(mediaTypes, function(err)
       {
         if (err)
         {
@@ -232,6 +235,38 @@
           return
         }
         
+        var controller = deviceControllers[command.sender]
+        
+        if (!controller)
+        {
+          return
+        }
+        
+        controller.acceptInvitation(command)
+      }
+      
+      room.videosessionjoin = function(command)
+      {
+        debugger
+      }
+      
+      room.onicecandidate = function(command)
+      {
+        // debugger
+        // joinVideoConnection(command)
+      }
+      
+      
+      
+      /*
+      
+      room.oninvitation = function(command)
+      {
+        if (command.sender === room.uid)
+        {
+          return
+        }
+        
         videoSession.acceptInvitation(command)
       }
       
@@ -244,7 +279,8 @@
       {
         // debugger
         // joinVideoConnection(command)
-      }  
+      }
+      */
             
       
       // Chat
@@ -264,6 +300,20 @@
       document.addEventListener("DOMContentLoaded", function()
       {
         room.connect()
+        
+        navigator.mediaDevices
+        .enumerateDevices()
+        .then(function(devices) 
+        {
+          devices.forEach(function(device) 
+          {
+            console.log(device.kind + ": " + device.label +
+                        " id = " + device.deviceId);
+          })
+        })
+        .catch(function(err) {
+          console.log(err.name + ": " + err.message);
+        })
       })
     </script>
   </body>

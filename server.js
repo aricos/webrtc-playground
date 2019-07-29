@@ -99,7 +99,7 @@ roomSocket.on("connection", function connection(ws, req, uid)
         cmd: "identity.assign",
         open: true,
         uid: uid || uuid.v4(),
-        serverConnectionDate: new Date()
+        serverConnectionDate: new Date().getTime()
     }
     
     console.info(`open connection: operator=${operator.uid}, returning=${!!uid}`)
@@ -138,7 +138,18 @@ roomSocket.on("connection", function connection(ws, req, uid)
             switch (decoded.cmd)
             {
             case "message.post":
-                roomSocket.broadcast(message)
+                
+                if (decoded.receivers)
+                {
+                    roomSocket.broadcastTo(decoded.receivers, message)
+                }
+                
+                else
+                {
+                    roomSocket.broadcast(message)
+                }
+                
+
                 break
                 
             case "videosession.start":
@@ -162,7 +173,7 @@ roomSocket.on("connection", function connection(ws, req, uid)
     
     ws.on("close", function()
     {
-        var duration = new Date().getTime() - operator.serverConnectionDate.getTime()
+        var duration = new Date().getTime() - operator.serverConnectionDate
         
         operator.open = false
         
@@ -182,6 +193,21 @@ roomSocket.broadcast = function(data, skip)
         {
             client.send(data)
         }
+    })
+}
+
+roomSocket.broadcastTo = function(receivers, data)
+{
+    this.clients.forEach(function(client)
+    {
+        if (!client.operator 
+            || receivers.indexOf(client.operator.uid) === -1 
+            || client.readyState !== WebSocket.OPEN)
+        {
+            return
+        }
+
+        client.send(data)
     })
 }
 

@@ -220,6 +220,11 @@ var createRoom = function(options)
             sendCommand: {
                 enumerable: true,
                 value: sendCommand
+            },
+            
+            sendCommandTo: {
+                enumerable: true,
+                value: sendCommandTo
             }
         })
         
@@ -252,6 +257,17 @@ var createRoom = function(options)
             command.sender = identity.uid
             
             send(JSON.stringify(command))
+        }
+        
+        function sendCommandTo(operatorId, commandName, info)
+        {
+            var command = {
+                receivers: Array.isArray(operatorId) ? operatorId : [operatorId]
+            }
+            
+            Object.assign(command, info)
+            
+            sendCommand(commandName, command)
         }
     
         // return the instance
